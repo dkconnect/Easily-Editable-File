@@ -1,87 +1,94 @@
-let eefData = { pages: [{ elements: [] }] }; // Store EEF data
-const canvas = document.getElementById("editorCanvas");
-const ctx = canvas.getContext("2d");
-let selectedText = null;
+const editor = document.getElementById("editor");
+const fileInput = document.getElementById("fileInput");
 
-// HTML Elements
-const textEditor = document.getElementById("textEditor");
-const textInput = document.getElementById("textInput");
-const fontSelect = document.getElementById("fontSelect");
-const fontSize = document.getElementById("fontSize");
-const textColor = document.getElementById("textColor");
-
-// 📌 Load EEF File
-document.getElementById("fileInput").addEventListener("change", function(event) {
+// 📌 Load EEF File (Supports Your Structure)
+fileInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        eefData = JSON.parse(e.target.result);
-        renderCanvas();
+        try {
+            const rawData = e.target.result;
+            console.log("Raw JSON Data:", rawData); // Debugging log
+            const data = JSON.parse(rawData);
+
+            // Check if pages exist
+            if (data.pages && Array.isArray(data.pages) && data.pages.length > 0) {
+                let pageContent = "";
+
+                // Loop through all pages and extract text elements
+                data.pages.forEach(page => {
+                    if (page.elements && Array.isArray(page.elements)) {
+                        page.elements.forEach(element => {
+                            if (element.type === "text" && element.content) {
+                                pageContent += `<p style="font-family: ${element.font}; font-size: ${element.size}px; color: ${element.color};">${element.content}</p>`;
+                            }
+                        });
+                    }
+                });
+
+                editor.innerHTML = pageContent;
+                console.log("EEF File Loaded Successfully!");
+            } else {
+                throw new Error("Invalid EEF format: No pages or elements found.");
+            }
+        } catch (error) {
+            alert("Error: Invalid EEF file format. Please check your structure.");
+            console.error("File Load Error:", error);
+        }
     };
     reader.readAsText(file);
 });
 
-// 📌 Render Text on Canvas
-function renderCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
-
-    eefData.pages[0].elements.forEach(element => {
-        if (element.type === "text") {
-            ctx.font = `${element.size}px ${element.font}`;
-            ctx.fillStyle = element.color;
-            ctx.fillText(element.content, element.x, element.y);
-        }
-    });
-}
-
-// 📌 Detect Click on Text & Show Editor
-canvas.addEventListener("click", function(event) {
-    const x = event.offsetX, y = event.offsetY;
-
-    eefData.pages[0].elements.forEach(element => {
-        if (element.type === "text") {
-            const textWidth = ctx.measureText(element.content).width;
-            const textHeight = element.size;
-
-            if (x >= element.x && x <= element.x + textWidth && y >= element.y - textHeight && y <= element.y) {
-                selectedText = element;
-                showTextEditor(element, x, y);
-            }
-        }
-    });
-});
-
-// 📌 Show Text Editor Toolbar
-function showTextEditor(element, x, y) {
-    textEditor.classList.remove("hidden");
-    textEditor.style.left = `${canvas.offsetLeft + x}px`;
-    textEditor.style.top = `${canvas.offsetTop + y}px`;
-
-    textInput.value = element.content;
-    fontSelect.value = element.font;
-    fontSize.value = element.size;
-    textColor.value = element.color;
-}
-
-// 📌 Apply Text Changes
-function applyTextEdit() {
-    if (selectedText) {
-        selectedText.content = textInput.value;
-        selectedText.font = fontSelect.value;
-        selectedText.size = parseInt(fontSize.value);
-        selectedText.color = textColor.value;
-        textEditor.classList.add("hidden");
-        renderCanvas();
-    }
-}
-
-// 📌 Save EEF File
+// 📌 Save EEF File (Keeps Your Structure)
 function saveEEF() {
+    let elements = [];
+
+    // Extract all text elements from the editor
+    editor.childNodes.forEach(child => {
+        if (child.tagName === "P") {
+            elements.push({
+                type: "text",
+                content: child.innerText,
+                x: 50, // Default position (can be improved)
+                y: 100,
+                font: getComputedStyle(child).fontFamily,
+                size: parseInt(getComputedStyle(child).fontSize),
+                color: getComputedStyle(child).color
+            });
+        }
+    });
+
+    // Create the new EEF structure
+    const eefData = {
+        meta: { title: "EEF Edited", author: "User", created: new Date().toISOString().split("T")[0] },
+        pages: [{ elements }]
+    };
+
     const blob = new Blob([JSON.stringify(eefData, null, 4)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "edited.eef";
     a.click();
 }
+
+// 📌 Enable Rich Text Editing (Word-like Features)
+document.addEventListener("keydown", function(event) {
+    if (event.ctrlKey) {
+        switch (event.key.toLowerCase()) {
+            case "b":
+                document.execCommand("bold");
+                event.preventDefault();
+                break;
+            case "i":
+                document.execCommand("italic");
+                event.preventDefault();
+                break;
+            case "u":
+                document.execCommand("underline");
+                event.preventDefault();
+                break;
+        }
+    }
+});
