@@ -1,7 +1,14 @@
 let eefData = { pages: [{ elements: [] }] }; // Store EEF data
 const canvas = document.getElementById("editorCanvas");
 const ctx = canvas.getContext("2d");
-let selectedText = null; // Track selected text for editing
+let selectedText = null;
+
+// HTML Elements
+const textEditor = document.getElementById("textEditor");
+const textInput = document.getElementById("textInput");
+const fontSelect = document.getElementById("fontSelect");
+const fontSize = document.getElementById("fontSize");
+const textColor = document.getElementById("textColor");
 
 // 📌 Load EEF File
 document.getElementById("fileInput").addEventListener("change", function(event) {
@@ -29,40 +36,45 @@ function renderCanvas() {
     });
 }
 
-// 📌 Detect Click on Text
+// 📌 Detect Click on Text & Show Editor
 canvas.addEventListener("click", function(event) {
     const x = event.offsetX, y = event.offsetY;
 
     eefData.pages[0].elements.forEach(element => {
         if (element.type === "text") {
             const textWidth = ctx.measureText(element.content).width;
-            const textHeight = element.size; // Approximate height
+            const textHeight = element.size;
+
             if (x >= element.x && x <= element.x + textWidth && y >= element.y - textHeight && y <= element.y) {
                 selectedText = element;
-                showEditBox(element);
+                showTextEditor(element, x, y);
             }
         }
     });
 });
 
-// 📌 Show Input Box for Editing
-function showEditBox(element) {
-    const inputBox = document.createElement("input");
-    inputBox.type = "text";
-    inputBox.value = element.content;
-    inputBox.style.position = "absolute";
-    inputBox.style.left = `${canvas.offsetLeft + element.x}px`;
-    inputBox.style.top = `${canvas.offsetTop + element.y}px`;
-    inputBox.style.fontSize = `${element.size}px`;
-    document.body.appendChild(inputBox);
+// 📌 Show Text Editor Toolbar
+function showTextEditor(element, x, y) {
+    textEditor.classList.remove("hidden");
+    textEditor.style.left = `${canvas.offsetLeft + x}px`;
+    textEditor.style.top = `${canvas.offsetTop + y}px`;
 
-    inputBox.focus();
+    textInput.value = element.content;
+    fontSelect.value = element.font;
+    fontSize.value = element.size;
+    textColor.value = element.color;
+}
 
-    inputBox.addEventListener("blur", function() {
-        element.content = inputBox.value;
-        document.body.removeChild(inputBox);
+// 📌 Apply Text Changes
+function applyTextEdit() {
+    if (selectedText) {
+        selectedText.content = textInput.value;
+        selectedText.font = fontSelect.value;
+        selectedText.size = parseInt(fontSize.value);
+        selectedText.color = textColor.value;
+        textEditor.classList.add("hidden");
         renderCanvas();
-    });
+    }
 }
 
 // 📌 Save EEF File
