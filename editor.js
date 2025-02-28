@@ -1,7 +1,32 @@
 const editor = document.getElementById("editor");
 const fileInput = document.getElementById("fileInput");
+const fontSelector = document.getElementById("fontSelector");
+const fontSizeSelector = document.getElementById("fontSizeSelector");
+const colorPicker = document.getElementById("colorPicker");
 
-// 📌 Load EEF File (Supports Your Structure)
+// 📌 Apply Font Style
+fontSelector.addEventListener("change", function() {
+    document.execCommand("fontName", false, fontSelector.value);
+});
+
+// 📌 Apply Font Size
+fontSizeSelector.addEventListener("change", function() {
+    document.execCommand("fontSize", false, "7"); // Trick to use font size
+    let fontElements = document.getElementsByTagName("font");
+    for (let i = 0; i < fontElements.length; i++) {
+        if (fontElements[i].size === "7") {
+            fontElements[i].removeAttribute("size");
+            fontElements[i].style.fontSize = fontSizeSelector.value;
+        }
+    }
+});
+
+// 📌 Apply Text Color
+colorPicker.addEventListener("input", function() {
+    document.execCommand("foreColor", false, colorPicker.value);
+});
+
+// 📌 Load EEF File
 fileInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -10,14 +35,10 @@ fileInput.addEventListener("change", function(event) {
     reader.onload = function(e) {
         try {
             const rawData = e.target.result;
-            console.log("Raw JSON Data:", rawData); // Debugging log
             const data = JSON.parse(rawData);
 
-            // Check if pages exist
-            if (data.pages && Array.isArray(data.pages) && data.pages.length > 0) {
+            if (data.pages && Array.isArray(data.pages)) {
                 let pageContent = "";
-
-                // Loop through all pages and extract text elements
                 data.pages.forEach(page => {
                     if (page.elements && Array.isArray(page.elements)) {
                         page.elements.forEach(element => {
@@ -29,29 +50,26 @@ fileInput.addEventListener("change", function(event) {
                 });
 
                 editor.innerHTML = pageContent;
-                console.log("EEF File Loaded Successfully!");
             } else {
                 throw new Error("Invalid EEF format: No pages or elements found.");
             }
         } catch (error) {
-            alert("Error: Invalid EEF file format. Please check your structure.");
-            console.error("File Load Error:", error);
+            alert("Error: Invalid EEF file format.");
         }
     };
     reader.readAsText(file);
 });
 
-// 📌 Save EEF File (Keeps Your Structure)
+// 📌 Save EEF File
 function saveEEF() {
     let elements = [];
 
-    // Extract all text elements from the editor
     editor.childNodes.forEach(child => {
         if (child.tagName === "P") {
             elements.push({
                 type: "text",
                 content: child.innerText,
-                x: 50, // Default position (can be improved)
+                x: 50,
                 y: 100,
                 font: getComputedStyle(child).fontFamily,
                 size: parseInt(getComputedStyle(child).fontSize),
@@ -60,7 +78,6 @@ function saveEEF() {
         }
     });
 
-    // Create the new EEF structure
     const eefData = {
         meta: { title: "EEF Edited", author: "User", created: new Date().toISOString().split("T")[0] },
         pages: [{ elements }]
@@ -72,23 +89,3 @@ function saveEEF() {
     a.download = "edited.eef";
     a.click();
 }
-
-// 📌 Enable Rich Text Editing (Word-like Features)
-document.addEventListener("keydown", function(event) {
-    if (event.ctrlKey) {
-        switch (event.key.toLowerCase()) {
-            case "b":
-                document.execCommand("bold");
-                event.preventDefault();
-                break;
-            case "i":
-                document.execCommand("italic");
-                event.preventDefault();
-                break;
-            case "u":
-                document.execCommand("underline");
-                event.preventDefault();
-                break;
-        }
-    }
-});
