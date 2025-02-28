@@ -1,6 +1,6 @@
 import json
 
-# Define basic EEF document structure
+#Basic EEF document structure
 eef_data = {
     "meta": {
         "title": "The First EEF Document",
