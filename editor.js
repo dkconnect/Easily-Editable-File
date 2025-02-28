@@ -1,5 +1,6 @@
 const editor = document.getElementById("editor");
 const fileInput = document.getElementById("fileInput");
+const imageInput = document.getElementById("imageInput");
 const fontSelector = document.getElementById("fontSelector");
 const fontSizeSelector = document.getElementById("fontSizeSelector");
 const colorPicker = document.getElementById("colorPicker");
@@ -11,7 +12,7 @@ fontSelector.addEventListener("change", function() {
 
 // 📌 Apply Font Size
 fontSizeSelector.addEventListener("change", function() {
-    document.execCommand("fontSize", false, "7"); // Trick to use font size
+    document.execCommand("fontSize", false, "7");
     let fontElements = document.getElementsByTagName("font");
     for (let i = 0; i < fontElements.length; i++) {
         if (fontElements[i].size === "7") {
@@ -24,6 +25,53 @@ fontSizeSelector.addEventListener("change", function() {
 // 📌 Apply Text Color
 colorPicker.addEventListener("input", function() {
     document.execCommand("foreColor", false, colorPicker.value);
+});
+
+// 📌 Insert Image into Editor
+imageInput.addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.style.maxWidth = "200px"; // Default size
+        img.style.cursor = "move";
+
+        const imgContainer = document.createElement("div");
+        imgContainer.classList.add("image-container");
+        imgContainer.style.position = "absolute";
+        imgContainer.style.left = "50px";
+        imgContainer.style.top = "50px";
+        imgContainer.appendChild(img);
+
+        // Enable dragging
+        imgContainer.onmousedown = function(event) {
+            event.preventDefault();
+            let shiftX = event.clientX - imgContainer.getBoundingClientRect().left;
+            let shiftY = event.clientY - imgContainer.getBoundingClientRect().top;
+
+            function moveAt(pageX, pageY) {
+                imgContainer.style.left = pageX - shiftX + "px";
+                imgContainer.style.top = pageY - shiftY + "px";
+            }
+
+            function onMouseMove(event) {
+                moveAt(event.pageX, event.pageY);
+            }
+
+            document.addEventListener("mousemove", onMouseMove);
+
+            imgContainer.onmouseup = function() {
+                document.removeEventListener("mousemove", onMouseMove);
+                imgContainer.onmouseup = null;
+            };
+        };
+
+        editor.appendChild(imgContainer);
+    };
+    reader.readAsDataURL(file);
 });
 
 // 📌 Load EEF File
@@ -39,11 +87,16 @@ fileInput.addEventListener("change", function(event) {
 
             if (data.pages && Array.isArray(data.pages)) {
                 let pageContent = "";
+
                 data.pages.forEach(page => {
                     if (page.elements && Array.isArray(page.elements)) {
                         page.elements.forEach(element => {
-                            if (element.type === "text" && element.content) {
+                            if (element.type === "text") {
                                 pageContent += `<p style="font-family: ${element.font}; font-size: ${element.size}px; color: ${element.color};">${element.content}</p>`;
+                            } else if (element.type === "image") {
+                                pageContent += `<div class="image-container" style="position: absolute; left: ${element.x}px; top: ${element.y}px;">
+                                                    <img src="${element.src}" style="max-width: 200px; cursor: move;">
+                                                </div>`;
                             }
                         });
                     }
@@ -74,6 +127,14 @@ function saveEEF() {
                 font: getComputedStyle(child).fontFamily,
                 size: parseInt(getComputedStyle(child).fontSize),
                 color: getComputedStyle(child).color
+            });
+        } else if (child.classList.contains("image-container")) {
+            let img = child.querySelector("img");
+            elements.push({
+                type: "image",
+                src: img.src,
+                x: parseInt(child.style.left),
+                y: parseInt(child.style.top)
             });
         }
     });
