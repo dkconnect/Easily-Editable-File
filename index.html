@@ -3,15 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EEF Word-Like Editor</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>EEF Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #toolbar {
+            margin-bottom: 10px;
+        }
+        #editor {
+            border: 1px solid #ccc;
+            min-height: 300px;
+            padding: 10px;
+            outline: none;
+        }
+        button, select, input {
+            margin-right: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h1>📄 EEF Word-Like Editor</h1>
-    
-    <input type="file" id="fileInput" accept=".eef">
-    <button onclick="saveEEF()">💾 Save</button>
 
+    <h2>EEF Editor</h2>
+
+    <!-- Toolbar -->
+    <div id="toolbar">
+        <button onclick="document.execCommand('bold')"><b>B</b></button>
+        <button onclick="document.execCommand('italic')"><i>I</i></button>
+        <button onclick="document.execCommand('underline')"><u>U</u></button>
+
+        <select id="fontSelector">
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+        </select>
+
+        <select id="fontSizeSelector">
+            <option value="12px">12</option>
+            <option value="16px">16</option>
+            <option value="20px">20</option>
+            <option value="24px">24</option>
+        </select>
+
+        <input type="color" id="colorPicker">
+
+        <button onclick="saveEEF()">Save EEF</button>
+        <input type="file" id="fileInput">
+    </div>
+
+    <!-- Editable Document Area -->
     <div id="editor" contenteditable="true"></div>
 
     <script src="editor.js"></script>
